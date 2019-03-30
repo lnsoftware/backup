@@ -1,0 +1,60 @@
+<?xml version="1.0" ?>
+<project name="vwt" default="copytoftppath">
+
+	<!--引用配置文件 -->
+	<property file="build.properties" />
+
+	<!--定义生成当天日期目录的方法 -->
+	<tstamp>
+		<format property="build.date" pattern="yyyyMMdd" />
+	</tstamp>
+
+  <!--打印基础环境信息 -->
+	<echo>
+		Project Name: ${ProjectName}
+		ANT Verion: ${ant.version}
+		Java Version: ${ant.java.version}
+		Current Dir: ${basedir}
+		OS Name: ${os.name}
+		Date: ${build.date}
+	</echo>
+
+	<!--定义deploy的根目录-->
+	<property name="base.dir" value="." />
+	<!--定义工程的根目录，也就是deploy所在的那一层目录-->
+	<property name="base.path" value="${basedir}/.." />
+	<!--定义pom.xml生成的jar包的目录，也就是源jar包的目录-->
+	<property name="src.war.path" value="${base.path}/target" />
+
+	<echo>
+		basedir: ${base.path}
+	</echo>
+	
+
+	<!--检查FTP上面是否有今天日期的目录，如果没有则创建今天日期目录。如果有今天的日期目录，则先清理目录里面之前打好的JAR包-->
+	<target name="remove-ftp-oldvwt">
+		<available file="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}" property="DIR_exist"/>
+		<antcall target="isTrue"/>
+		<antcall target="isFalse"/>
+	</target>
+	<target name="isTrue" if="DIR_exist">
+		<delete file="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}/${ProjectName}.zip"/>
+	</target>
+	<target name="isFalse" unless="DIR_exist">
+		<mkdir dir="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}"/>
+			<exec executable="/bin/sh" failonerror="true" dir="${basedir}">
+				<arg line="-c 'chmod -R 777 ${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}'" />
+  		</exec>
+	</target>
+
+
+	<!--把刚刚打好的jar包复制到FTP的目录下面去-->
+	<target name="copytoftppath" depends="remove-ftp-oldvwt">
+		<copy todir="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}">
+			<fileset dir="${src.war.path}">	
+				<include name='*.jar'></include>
+			</fileset>
+		</copy> 
+		<delete dir="${base.path}/target" />
+	</target>
+</project>

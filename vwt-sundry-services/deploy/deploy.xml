@@ -1,0 +1,94 @@
+<?xml version="1.0" ?>
+<project name="vwt-sundry-services" default="copytoftppath">
+
+	<property file="build.properties" />
+
+	<tstamp>
+		<format property="build.date" pattern="yyyyMMdd" />
+	</tstamp>
+
+	<echo>
+		Project Name: ${ProjectName}
+		ANT Verion: ${ant.version}
+		Java Version: ${ant.java.version}
+		SVN Revision:${revision}
+		Current Dir: ${basedir}
+		OS Name: ${os.name}
+		Date: ${build.date}
+	</echo>
+
+	<!--定义deploy的根目录-->
+	<property name="base.dir" value="." />
+	<!--定义工程的根目录，也就是deploy所在的那一层目录-->
+	<property name="base.path" value="${basedir}/.." />
+	<!--定义把源jar包和lib目录和start.sh和shutdown.sh放到一个目录-->
+	<property name="base.vwt-sundry-services.path" value="${basedir}/jar-temp/${ProjectName}" />
+	<property name="base.vwt-sundry-services.path.middle" value="${basedir}/jar-temp" />
+	<!--定义pom.xml生成的jar包的目录，也就是源jar包的目录-->
+	<property name="src.war.path" value="${base.path}/target" />
+
+	<echo>
+		basedir: ${base.path}
+	</echo>
+	
+	<!--定义源jar包的名字-->
+	<property name="target.war.vwt-sundry-services.file.name" value="${ProjectName}-impl.jar" />
+	<!--定义最终zip包的名字-->
+	<property name="target.zip.file.name" value="${ProjectName}.zip" />
+	<!--定义最终zip包的路径和名字-->
+	<property name="target.zip.path.file.name" value="${base.path}/${target.zip.file.name}" />
+
+	<!--清理war-temp/${ProjectName}目录和中间的临时目录，用来把所有需要zip的文件放进去-->
+	<target name="clean">
+		<delete dir="${base.vwt-sundry-services.path}" />
+		<delete dir="${base.vwt-sundry-services.path.middle}" />
+		<delete dir="${target.war.vwt-sundry-services.file.namepath}" />
+	</target>
+
+	<!--把jar包lib目录以及start.sh和shutdown.sh，放到war-temp/${ProjectName}目录下面去-->
+	<target name="allcopy" depends="clean">
+		<mkdir dir="${base.vwt-sundry-services.path.middle}" />
+		<mkdir dir="${base.vwt-sundry-services.path}" />
+		<copy todir="${base.vwt-sundry-services.path}/lib">  
+    	<fileset dir="${src.war.path}/lib"/>
+		</copy>
+		<copy todir="${base.vwt-sundry-services.path}/conf">  
+    	<fileset dir="${src.war.path}/conf"/>
+		</copy> 
+		<copy file="${src.war.path}/${target.war.vwt-sundry-services.file.name}" todir="${base.vwt-sundry-services.path}" />
+		<copy file="${base.path}/shutdown.sh" todir="${base.vwt-sundry-services.path}" />
+		<copy file="${base.path}/startup.sh" todir="${base.vwt-sundry-services.path}" />
+	</target>
+
+	<echo>
+		target.zip.path.file.name:${target.zip.path.file.name}
+		base.path:${base.path}
+		base.vwt-sundry-services.path:${base.vwt-sundry-services.path}				
+	</echo>
+
+	<!--把改好配置文件的工程包，压缩成一个zip发布包-->
+	<target name="zip" depends="allcopy">
+		<zip destfile="${target.zip.path.file.name}"  basedir="${base.vwt-sundry-services.path.middle}/"></zip>
+	</target>
+	
+	<!--清理FTP目录，然后把vwt-sundry-services.zip复制到FTP的目录下面去-->
+	<target name="removevwt-sundry-services">
+		<available file="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}" property="DIR_exist"/>
+		<antcall target="isTrue"/>
+		<antcall target="isFalse"/>
+	</target>
+	<target name="isTrue" if="DIR_exist">
+		<delete file="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}/${ProjectName}.zip"/>
+	</target>
+	<target name="isFalse" unless="DIR_exist">
+		<mkdir dir="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}"/>
+			<exec executable="/bin/sh" failonerror="true" dir="${basedir}">
+				<arg line="-c 'chmod -R 777 ${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}'" />
+  		</exec>
+	</target>
+
+	<target name="copytoftppath" depends="zip,removevwt-sundry-services">
+		<copy file="${target.zip.path.file.name}" todir="${publishpath}/${MajorVersion}.${MinorVersion}/${build.date}"></copy>
+		<delete dir="${base.path}/target" />
+	</target>
+</project>
